@@ -54,5 +54,3 @@ jobs:
         with:
           files: artifacts/*
           body_path: .github/workflows/release_body.md
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
