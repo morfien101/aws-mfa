@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/user"
 	"time"
@@ -17,38 +16,62 @@ import (
 )
 
 var (
-	flagSrcProfile = flag.String("s", "default", "Source (primary) profile")
+	flagSrcProfile = flag.String("s", "", "Source (primary) profile")
 	flagDstProfile = flag.String("d", "", "MFA-enabled profile")
 	flagCode       = flag.String("c", "", "MFA code. Will need at least few seconds of validity left on the token.")
-	flagTimeLeft   = flag.Bool("t", false, "Show time left on token")
-	flagQuite      = flag.Bool("q", false, "Quite mode")
+	flagTimeLeft   = flag.Bool("t", false, "Show time left on token. A source profile is required (-s).")
+	flagQuite      = flag.Bool("q", false, "Quite mode. Only print out errors.")
+	flagHelp       = flag.Bool("h", false, "Show this help menu")
+	flagVersion    = flag.Bool("v", false, "Show version")
 
 	version = "dev"
 )
 
 func checkFatalError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
 func logIt(msg string) {
 	if !*flagQuite {
-		log.Println(msg)
+		fmt.Println(msg)
 	}
+}
+
+func showVersion() {
+	fmt.Println(version)
+}
+
+func showHelp() {
+	fmt.Println("Usage: aws-mfa [options]")
+	fmt.Println("Options:")
+	flag.PrintDefaults()
 }
 
 func main() {
 	flag.Parse()
 
+	if *flagVersion {
+		showVersion()
+		return
+	}
+
+	if *flagHelp {
+		showHelp()
+		return
+	}
+
 	if *flagTimeLeft {
 		if *flagSrcProfile == "" {
-			flag.Usage()
+			fmt.Println("Source profile is required")
+			showHelp()
 			os.Exit(1)
 		}
 		err := checkValidityTime(*flagSrcProfile)
 		checkFatalError(err)
-		os.Exit(0)
+		return
 	}
 
 	if *flagSrcProfile == "" || *flagDstProfile == "" || *flagCode == "" {
@@ -198,17 +221,17 @@ func writeCredentials(stsCreds map[string]string, srcProfile string, dstProfile 
 func checkValidityTime(srcProfile string) error {
 	configFile, err := configFilePath()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	configFileIni, err := ini.Load(configFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	expiration, err := configFileIni.Section("profile " + srcProfile).GetKey("mfa_expiration")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	expirationTime, err := time.Parse(time.RFC3339, expiration.String())

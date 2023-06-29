@@ -1,3 +1,4 @@
-# First release
+# Fixed a few bugs and added a help and version flag
 
-Appears to be working well. Please let me know if you have any issues. 🌮
+Fixed some minor bugs related to the output generated.
+Functionally still the same.
